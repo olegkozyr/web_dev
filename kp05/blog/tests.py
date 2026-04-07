@@ -8,11 +8,14 @@ from .models import Post
 class BlogTests(TestCase):
     @classmethod
     def setUpTestData(cls):
+        # client table
         cls.user = get_user_model().objects.create_user(
             username='testuser',
             email='test@email.com',
             password='secret',
         )
+
+        # post table
         cls.title = "New title"
         cls.body = 'Body content'
         cls.author = cls.user
@@ -37,3 +40,39 @@ class BlogTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.body)
         self.assertTemplateUsed(response, 'home.html')
+
+
+    def test_post_createview(self):
+        response = self.client.post(
+            reverse('post_new'),
+            {
+                'title': self.title,
+                'body': self.body,
+                'author': self.author.id
+            }            
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Post.objects.last().title, self.title)
+        self.assertEqual(Post.objects.last().body, self.body)
+
+
+    def test_post_editview(self):
+        title_updated = 'Updated title'
+        body_updated = 'Updated text'
+        response = self.client.post(
+            reverse('post_edit', args='1'),
+            {
+                'title': title_updated,
+                'body': body_updated
+            }            
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(Post.objects.last().title, title_updated)
+        self.assertEqual(Post.objects.last().body, body_updated)
+
+
+    def test_post_deleteview(self):
+        response = self.client.post(
+            reverse('post_delete', args='1')         
+        )
+        self.assertEqual(response.status_code, 302)
